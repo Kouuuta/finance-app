@@ -11,7 +11,9 @@ export async function getUserId(): Promise<string> {
 }
 
 export async function updateProfile(id: string, data: { name?: string }) {
-  await prisma.user.update({ where: { id }, data });
+  const userId = await getUserId();
+  if (id !== userId) throw new Error("Forbidden");
+  await prisma.user.update({ where: { id: userId }, data });
   return { ok: true };
 }
 

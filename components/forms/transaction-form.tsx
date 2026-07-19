@@ -76,13 +76,20 @@ export function TransactionForm({
     e.preventDefault();
     setSubmitting(true);
     setError(null);
+    const parsedAmount = parseFloat(amount);
+    if (!parsedAmount || parsedAmount <= 0) {
+      setError("Amount must be greater than 0");
+      setSubmitting(false);
+      return;
+    }
+
     try {
       if (isEditing && editTransaction) {
         await updateTransaction(editTransaction.id, {
           accountId,
           toAccountId: isTransfer ? toAccountId : null,
           categoryId: isTransfer ? null : categoryId || null,
-          amount: parseFloat(amount) || 0,
+          amount: parsedAmount,
           type,
           note: note || null,
           tags: tags.length > 0 ? tags.join(",") : null,
@@ -93,7 +100,7 @@ export function TransactionForm({
           accountId,
           toAccountId: isTransfer ? toAccountId : undefined,
           categoryId: (isTransfer ? undefined : categoryId) || undefined,
-          amount: parseFloat(amount) || 0,
+          amount: parsedAmount,
           type,
           note: note || undefined,
           tags: tags.length > 0 ? tags.join(",") : undefined,
@@ -233,6 +240,7 @@ export function TransactionForm({
                 <input
                   type="number"
                   step="0.01"
+                  min="0.01"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   required

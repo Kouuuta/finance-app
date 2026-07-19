@@ -40,10 +40,17 @@ export function BudgetForm({ open, onClose, categories, editBudget }: BudgetForm
     e.preventDefault();
     setSubmitting(true);
     setError(null);
+    const parsedAmount = parseFloat(amount);
+    if (!parsedAmount || parsedAmount <= 0) {
+      setError("Amount must be greater than 0");
+      setSubmitting(false);
+      return;
+    }
+
     try {
       const data = {
         categoryId: categoryId || undefined,
-        amount: parseFloat(amount) || 0,
+        amount: parsedAmount,
         period,
       };
       if (editBudget) {
@@ -117,6 +124,7 @@ export function BudgetForm({ open, onClose, categories, editBudget }: BudgetForm
                   <input
                     type="number"
                     step="0.01"
+                    min="0.01"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                     required

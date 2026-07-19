@@ -115,12 +115,19 @@ export function AccountForm({ open, onClose, institutions, existingAccounts = []
     e.preventDefault();
     setSubmitting(true);
     setError(null);
+    const parsedBalance = parseFloat(balance);
+    if (parsedBalance < 0) {
+      setError("Balance cannot be negative");
+      setSubmitting(false);
+      return;
+    }
+
     try {
       if (isEditing && editAccount) {
         await updateAccount(editAccount.id, {
           name,
           type,
-          balance: parseFloat(balance) || 0,
+          balance: parsedBalance || 0,
           currency,
           exchangeRateToBase: parseFloat(exchangeRateToBase) || 1,
           interestRateAnnual:
@@ -307,6 +314,7 @@ export function AccountForm({ open, onClose, institutions, existingAccounts = []
                         <input
                           type="number"
                           step="0.01"
+                          min="0"
                           value={balance}
                           onChange={(e) => setBalance(e.target.value)}
                           className="w-full rounded-lg border border-hair border-line bg-paper-0 px-3.5 py-2.5 text-[15px] text-ink-900 placeholder:text-ink-400 focus:border-brand-600 focus:outline-none"

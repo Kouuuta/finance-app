@@ -29,14 +29,33 @@ export function InvestmentForm({ open, onClose }: InvestmentFormProps) {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
+    const parsedUnits = parseFloat(units);
+    const parsedCostBasis = parseFloat(costBasis);
+    const parsedCurrentPrice = parseFloat(currentPrice);
+    if (!parsedUnits || parsedUnits <= 0) {
+      setError("Units must be greater than 0");
+      setSubmitting(false);
+      return;
+    }
+    if (parsedCostBasis < 0) {
+      setError("Cost basis cannot be negative");
+      setSubmitting(false);
+      return;
+    }
+    if (!parsedCurrentPrice || parsedCurrentPrice <= 0) {
+      setError("Current price must be greater than 0");
+      setSubmitting(false);
+      return;
+    }
+
     try {
       await createInvestment({
         name,
         type,
         symbol: symbol.toUpperCase(),
-        units: parseFloat(units) || 0,
-        costBasis: parseFloat(costBasis) || 0,
-        currentPrice: parseFloat(currentPrice) || 0,
+        units: parsedUnits,
+        costBasis: parsedCostBasis,
+        currentPrice: parsedCurrentPrice,
       });
       onClose();
     } catch (err) {
@@ -130,6 +149,7 @@ export function InvestmentForm({ open, onClose }: InvestmentFormProps) {
                 <input
                   type="number"
                   step="0.001"
+                  min="0.001"
                   value={units}
                   onChange={(e) => setUnits(e.target.value)}
                   required
@@ -145,6 +165,7 @@ export function InvestmentForm({ open, onClose }: InvestmentFormProps) {
                 <input
                   type="number"
                   step="0.01"
+                  min="0"
                   value={costBasis}
                   onChange={(e) => setCostBasis(e.target.value)}
                   required
@@ -160,6 +181,7 @@ export function InvestmentForm({ open, onClose }: InvestmentFormProps) {
                 <input
                   type="number"
                   step="0.01"
+                  min="0.01"
                   value={currentPrice}
                   onChange={(e) => setCurrentPrice(e.target.value)}
                   required

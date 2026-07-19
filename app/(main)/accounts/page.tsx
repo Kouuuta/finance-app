@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getFormOptions } from "@/lib/queries";
 import { AccountsContent } from "./AccountsContent";
@@ -5,7 +6,7 @@ import { AccountsContent } from "./AccountsContent";
 export default async function Accounts() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
+  if (!user) redirect("/login");
 
   const { accounts, institutions } = await getFormOptions(user.id);
 

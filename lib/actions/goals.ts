@@ -31,25 +31,27 @@ export async function contributeToGoal(
   });
   if (!goal) throw new Error("Goal not found");
 
-  await prisma.account.update({
-    where: { id_userId: { id: accountId, userId } },
-    data: { balance: { increment: -amount } },
-  });
+  await prisma.$transaction(async (tx) => {
+    await tx.account.update({
+      where: { id_userId: { id: accountId, userId } },
+      data: { balance: { increment: -amount } },
+    });
 
-  await prisma.transaction.create({
-    data: {
-      userId,
-      accountId,
-      amount,
-      type: "transfer",
-      note: `Contribution to ${goal.name}`,
-      date: new Date(),
-    },
-  });
+    await tx.transaction.create({
+      data: {
+        userId,
+        accountId,
+        amount,
+        type: "transfer",
+        note: `Contribution to ${goal.name}`,
+        date: new Date(),
+      },
+    });
 
-  await prisma.savingsGoal.update({
-    where: { id: goalId },
-    data: { currentAmount: { increment: amount } },
+    await tx.savingsGoal.update({
+      where: { id: goalId },
+      data: { currentAmount: { increment: amount } },
+    });
   });
 
   revalidatePath("/goals");

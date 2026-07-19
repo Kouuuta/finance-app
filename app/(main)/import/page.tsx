@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { ImportContent } from "./ImportContent";
@@ -5,7 +6,7 @@ import { ImportContent } from "./ImportContent";
 export default async function Import() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
+  if (!user) redirect("/login");
 
   const [accounts, categories] = await Promise.all([
     prisma.account.findMany({

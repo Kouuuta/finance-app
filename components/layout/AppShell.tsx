@@ -222,12 +222,18 @@ function BottomNav() {
   return (
     <>
       <MoreMenu open={moreOpen} onClose={() => setMoreOpen(false)} />
-      <nav
-        aria-label="Primary"
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-hair border-line bg-paper-0/95 backdrop-blur-sm md:hidden"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      <div
+        className="fixed inset-x-0 bottom-0 z-40 flex justify-center md:hidden"
+        style={{
+          paddingBottom: "max(env(safe-area-inset-bottom), 8px)",
+          paddingLeft: "env(safe-area-inset-left)",
+          paddingRight: "env(safe-area-inset-right)",
+        }}
       >
-        <ul className="mx-auto flex max-w-md items-stretch justify-around">
+        <nav
+          aria-label="Primary"
+          className="mx-3 flex w-full max-w-md items-stretch justify-around rounded-[28px] border border-hair border-line bg-paper-0/90 shadow-lg backdrop-blur-xl"
+        >
           {PRIMARY_NAV.map((item) => {
             const Icon = item.icon;
             const isActive =
@@ -240,28 +246,28 @@ function BottomNav() {
                   href={item.to}
                   aria-label={item.label}
                   aria-current={isActive ? "page" : undefined}
-                  className="pressable relative flex min-h-[56px] flex-col items-center justify-center gap-1 py-2"
+                  className="pressable relative flex min-h-[50px] flex-col items-center justify-center gap-0.5 py-1.5"
                 >
-                  <span className="relative flex h-6 w-full items-center justify-center">
-                    {isActive && (
-                      <motion.span
-                        layoutId="tab-active"
-                        transition={{
-                          type: "spring",
-                          duration: 0.4,
-                          bounce: 0.15,
-                        }}
-                        className="absolute -top-2 h-1 w-6 rounded-full bg-brand-600"
-                      />
-                    )}
+                  {isActive && (
+                    <motion.span
+                      layoutId="tab-indicator"
+                      transition={{
+                        type: "spring",
+                        duration: 0.4,
+                        bounce: 0.15,
+                      }}
+                      className="absolute inset-x-2 inset-y-0 rounded-xl bg-brand-100"
+                    />
+                  )}
+                  <span className="relative flex h-5 w-full items-center justify-center">
                     <Icon
                       className={isActive ? "text-brand-700" : "text-ink-400"}
-                      strokeWidth={isActive ? 2 : 1.75}
-                      size={22}
+                      strokeWidth={isActive ? 2.5 : 1.75}
+                      size={20}
                     />
                   </span>
                   <span
-                    className={`text-[10px] font-medium leading-none ${isActive ? "text-brand-700" : "text-ink-400"}`}
+                    className={`relative text-[10px] leading-none ${isActive ? "font-semibold text-brand-700" : "font-medium text-ink-400"}`}
                   >
                     {item.label}
                   </span>
@@ -276,27 +282,35 @@ function BottomNav() {
               aria-label="More"
               aria-expanded={moreOpen}
               aria-haspopup="menu"
-              className="pressable relative flex min-h-[56px] w-full flex-col items-center justify-center gap-1 py-2"
+              className="pressable relative flex min-h-[50px] w-full flex-col items-center justify-center gap-0.5 py-1.5"
             >
-              <span className="relative flex h-6 w-full items-center justify-center">
-                {moreActive && (
-                  <span className="absolute -top-2 h-1 w-6 rounded-full bg-brand-600" />
-                )}
+              {moreActive && (
+                <motion.span
+                  layoutId="tab-indicator"
+                  transition={{
+                    type: "spring",
+                    duration: 0.4,
+                    bounce: 0.15,
+                  }}
+                  className="absolute inset-x-2 inset-y-0 rounded-xl bg-brand-100"
+                />
+              )}
+              <span className="relative flex h-5 w-full items-center justify-center">
                 <MoreHorizontalIcon
                   className={moreOpen || moreActive ? "text-brand-700" : "text-ink-400"}
-                  strokeWidth={moreOpen || moreActive ? 2 : 1.75}
-                  size={22}
+                  strokeWidth={moreOpen || moreActive ? 2.5 : 1.75}
+                  size={20}
                 />
               </span>
               <span
-                className={`text-[10px] font-medium leading-none ${moreOpen || moreActive ? "text-brand-700" : "text-ink-400"}`}
+                className={`relative text-[10px] leading-none ${moreOpen || moreActive ? "font-semibold text-brand-700" : "font-medium text-ink-400"}`}
               >
                 More
               </span>
             </button>
           </li>
-        </ul>
-      </nav>
+        </nav>
+      </div>
     </>
   );
 }

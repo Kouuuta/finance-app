@@ -44,12 +44,19 @@ export function AutopayForm({ open, onClose, accounts, categories }: AutopayForm
     e.preventDefault();
     setSubmitting(true);
     setError(null);
+    const parsedAmount = parseFloat(amount);
+    if (!parsedAmount || parsedAmount <= 0) {
+      setError("Amount must be greater than 0");
+      setSubmitting(false);
+      return;
+    }
+
     try {
       await createAutopay({
         accountId,
         toAccountId: isTransfer ? toAccountId : undefined,
         categoryId: isTransfer ? undefined : categoryId || undefined,
-        amount: parseFloat(amount) || 0,
+        amount: parsedAmount,
         type,
         note: note || undefined,
         frequency,
@@ -165,6 +172,7 @@ export function AutopayForm({ open, onClose, accounts, categories }: AutopayForm
                 <input
                   type="number"
                   step="0.01"
+                  min="0.01"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   required

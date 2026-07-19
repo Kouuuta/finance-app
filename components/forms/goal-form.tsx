@@ -25,10 +25,17 @@ export function GoalForm({ open, onClose }: GoalFormProps) {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
+    const parsedTarget = parseFloat(targetAmount);
+    if (!parsedTarget || parsedTarget <= 0) {
+      setError("Target amount must be greater than 0");
+      setSubmitting(false);
+      return;
+    }
+
     try {
       await createGoal({
         name,
-        targetAmount: parseFloat(targetAmount) || 0,
+        targetAmount: parsedTarget,
         deadline: deadline ? new Date(deadline) : undefined,
       });
       onClose();

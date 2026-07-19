@@ -4,8 +4,9 @@ import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Finance Tracker",
-  description: "Personal finance tracker — manual expense, savings & investment tracking",
+  title: "Vault - Finance Tracker",
+  description:
+    "Personal finance tracker — manual expense, savings & investment tracking",
   icons: {
     icon: [
       { url: "/icon.svg", type: "image/svg+xml" },
@@ -17,7 +18,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "FinTrack",
+    title: "Vault",
   },
 };
 
