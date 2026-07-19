@@ -1,9 +1,10 @@
-import { prisma } from "@/lib/prisma";
+import { createClient } from "@/lib/supabase/server";
 import { getDashboardData } from "@/lib/queries";
 import { DashboardContent } from "./DashboardContent";
 
 export default async function Dashboard() {
-  const user = await prisma.user.findFirst();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
   const data = await getDashboardData(user.id);

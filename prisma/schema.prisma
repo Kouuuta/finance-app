@@ -3,21 +3,22 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
 model User {
-  id           String         @id @default(cuid())
-  email        String         @unique
-  passwordHash String
-  name         String?
-  createdAt    DateTime       @default(now())
-  accounts     Account[]
-  transactions Transaction[]
-  categories   Category[]
-  savingsGoals SavingsGoal[]
-  investments  Investment[]
+  id                    String                @id
+  email                 String                @unique
+  name                  String?
+  createdAt             DateTime              @default(now())
+  accounts              Account[]
+  transactions          Transaction[]
+  categories            Category[]
+  savingsGoals          SavingsGoal[]
+  investments           Investment[]
+  recurringTransactions RecurringTransaction[]
+  budgets               Budget[]
 }
 
 model Institution {
@@ -36,12 +37,19 @@ model Account {
   name                    String
   type                    String
   institutionId           String?
-  institution             Institution?  @relation(fields: [institutionId], references: [id])
+  institution             Institution? @relation(fields: [institutionId], references: [id])
   balance                 Float        @default(0)
+  currency                String       @default("PHP")
+  exchangeRateToBase      Float        @default(1)
   interestRateAnnual      Float?
   lastInterestAccrualDate DateTime?
-  transactions            Transaction[]
-  createdAt               DateTime     @default(now())
+  transactions            Transaction[]        @relation("SourceAccount")
+  incomingTransfers       Transaction[]        @relation("DestinationAccount")
+  recurringOutgoing       RecurringTransaction[] @relation("RecurringSource")
+  recurringIncoming       RecurringTransaction[] @relation("RecurringDestination")
+  createdAt               DateTime             @default(now())
+
+  @@unique([id, userId])
 }
 
 model Category {
@@ -51,22 +59,74 @@ model Category {
   name         String
   type         String
   isDefault    Boolean       @default(false)
-  transactions Transaction[]
+  transactions          Transaction[]
+  recurringTransactions RecurringTransaction[]
+  budgets               Budget[]
+
+  @@unique([id, userId])
+  @@unique([name, userId])
 }
 
 model Transaction {
-  id         String    @id @default(cuid())
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  accountId   String
+  account     Account   @relation("SourceAccount", fields: [accountId], references: [id])
+  toAccountId String?
+  toAccount   Account?  @relation("DestinationAccount", fields: [toAccountId], references: [id])
+  categoryId  String?
+  category    Category? @relation(fields: [categoryId], references: [id])
+  amount      Float
+  type        String
+  note        String?
+  tags        String?
+  date        DateTime
+  createdAt   DateTime  @default(now())
+
+  @@unique([id, userId])
+}
+
+model Budget {
+  id         String   @id @default(cuid())
   userId     String
-  user       User      @relation(fields: [userId], references: [id])
-  accountId  String
-  account    Account   @relation(fields: [accountId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
   categoryId String?
   category   Category? @relation(fields: [categoryId], references: [id])
   amount     Float
-  type       String
-  note       String?
-  date       DateTime
-  createdAt  DateTime  @default(now())
+  period     String   // "weekly" | "monthly" | "yearly"
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([id, userId])
+}
+
+model RecurringTransaction {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  accountId     String
+  account       Account   @relation("RecurringSource", fields: [accountId], references: [id])
+  toAccountId   String?
+  toAccount     Account?  @relation("RecurringDestination", fields: [toAccountId], references: [id])
+  categoryId    String?
+  category      Category? @relation(fields: [categoryId], references: [id])
+  amount        Float
+  type          String
+  note          String?
+  tags          String?
+  frequency     String
+  interval      Int       @default(1)
+  dayOfMonth    Int?
+  dayOfWeek     Int?
+  monthOfYear   Int?
+  startDate     DateTime
+  endDate       DateTime?
+  lastProcessed DateTime?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+
+  @@unique([id, userId])
 }
 
 model SavingsGoal {
@@ -78,6 +138,8 @@ model SavingsGoal {
   currentAmount Float     @default(0)
   deadline      DateTime?
   createdAt     DateTime  @default(now())
+
+  @@unique([id, userId])
 }
 
 model Investment {
@@ -91,4 +153,6 @@ model Investment {
   costBasis    Float
   currentPrice Float
   updatedAt    DateTime @updatedAt
+
+  @@unique([id, userId])
 }

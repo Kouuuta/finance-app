@@ -1,9 +1,10 @@
-import { prisma } from "@/lib/prisma";
+import { createClient } from "@/lib/supabase/server";
 import { getInvestments } from "@/lib/queries";
 import { InvestmentsContent } from "./InvestmentsContent";
 
 export default async function Investments() {
-  const user = await prisma.user.findFirst();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
   const investments = await getInvestments(user.id);

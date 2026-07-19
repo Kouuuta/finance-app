@@ -2,12 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-
-async function getUserId(): Promise<string> {
-  const user = await prisma.user.findFirst();
-  if (!user) throw new Error("No user found in database");
-  return user.id;
-}
+import { getUserId } from "./auth";
 
 export async function createInvestment(data: {
   name: string;
@@ -31,7 +26,7 @@ export async function updateInvestmentPrice(id: string, currentPrice: number) {
   const userId = await getUserId();
 
   await prisma.investment.update({
-    where: { id, userId },
+    where: { id_userId: { id, userId } },
     data: { currentPrice },
   });
 
@@ -42,7 +37,7 @@ export async function deleteInvestment(id: string) {
   const userId = await getUserId();
 
   await prisma.investment.delete({
-    where: { id, userId },
+    where: { id_userId: { id, userId } },
   });
 
   revalidatePath("/investments");

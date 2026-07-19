@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { Trash2, PencilIcon } from "lucide-react";
 import { PageHeading } from "@/components/layout/PageHeading";
+import { offlineAction } from "@/lib/offline";
 import { AddButton } from "@/components/ui/AddButton";
 import { Card } from "@/components/ui/Card";
 import { Money } from "@/components/ui/Money";
@@ -54,9 +55,11 @@ export function InvestmentsContent({ investments }: InvestmentsContentProps) {
     return investmentValue(inv) - inv.costBasis;
   }
 
+  const deleteInvestment = offlineAction("deleteInvestment");
+  const updateInvestmentPrice = offlineAction("updateInvestmentPrice");
+
   async function handleDelete(id: string) {
     setDeleting(id);
-    const { deleteInvestment } = await import("@/lib/actions/investments");
     await deleteInvestment(id);
     setDeleting(null);
   }
@@ -64,7 +67,6 @@ export function InvestmentsContent({ investments }: InvestmentsContentProps) {
   async function handleUpdatePrice(id: string) {
     if (!priceInput) return;
     setUpdating(id);
-    const { updateInvestmentPrice } = await import("@/lib/actions/investments");
     await updateInvestmentPrice(id, parseFloat(priceInput) || 0);
     setUpdating(null);
     setEditingPrice(null);

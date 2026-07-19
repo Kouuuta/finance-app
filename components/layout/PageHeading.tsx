@@ -5,10 +5,11 @@ import { motion } from "framer-motion";
 interface PageHeadingProps {
   eyebrow?: string;
   title: string;
+  description?: string;
   action?: React.ReactNode;
 }
 
-export function PageHeading({ eyebrow, title, action }: PageHeadingProps) {
+export function PageHeading({ eyebrow, title, description, action }: PageHeadingProps) {
   return (
     <motion.header
       initial={{ opacity: 0, y: 6 }}
@@ -25,6 +26,11 @@ export function PageHeading({ eyebrow, title, action }: PageHeadingProps) {
         <h1 className="font-display text-[26px] font-medium leading-none text-ink-900 sm:text-[30px]">
           {title}
         </h1>
+        {description && (
+          <p className="mt-1.5 text-[13px] text-ink-400">
+            {description}
+          </p>
+        )}
       </div>
       {action}
     </motion.header>

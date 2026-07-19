@@ -8,6 +8,7 @@ import { Money } from "@/components/ui/Money";
 import { LedgerRow } from "@/components/ui/LedgerRow";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { InstitutionIcon } from "@/components/ui/InstitutionIcon";
+import { RepeatIcon, CircleDollarSignIcon } from "lucide-react";
 import { useState } from "react";
 import { ExpenseBreakdownChart } from "@/components/charts/expense-breakdown-chart";
 import { NetWorthChart } from "@/components/charts/net-worth-chart";
@@ -29,16 +30,21 @@ interface DashboardData {
     name: string;
     type: string;
     balance: number;
+    currency: string;
+    exchangeRateToBase: number;
     institutionLogo: string | null;
     interestRateAnnual: number | null;
   }[];
   transactions: {
     id: string;
     accountId: string;
+    toAccountId?: string;
     category: string;
     type: string;
     amount: number;
     note: string;
+    tags?: string | null;
+    currency: string;
     date: string;
   }[];
   netWorth: number;
@@ -46,6 +52,24 @@ interface DashboardData {
   monthlyIncome: number;
   monthlyExpense: number;
   expenseBreakdown: { name: string; value: number }[];
+  budgetStatus: {
+    id: string;
+    categoryName: string | null;
+    amount: number;
+    period: string;
+    spent: number;
+  }[];
+  autopay: {
+    id: string;
+    accountName: string;
+    amount: number;
+    type: string;
+    note: string | null;
+    frequency: string;
+    interval: number;
+    dayOfMonth: number | null;
+    dayOfWeek: number | null;
+  }[];
 }
 
 export function DashboardContent({ data }: { data: DashboardData }) {
@@ -59,21 +83,31 @@ export function DashboardContent({ data }: { data: DashboardData }) {
   return (
     <div>
       <motion.section
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: EASE }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3, ease: EASE }}
         className="mb-8"
       >
         <p className="text-[12px] font-semibold uppercase tracking-wide text-brand-700">
           Total net worth
         </p>
-        <p className="mt-2 font-display text-[44px] font-medium leading-none text-ink-900 sm:text-[56px]">
+        <motion.p
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.06, ease: EASE }}
+          className="mt-2 font-display text-[44px] font-medium leading-none text-ink-900 sm:text-[56px]"
+        >
           <Money value={data.netWorth} />
-        </p>
-        <p className="mt-3 font-mono text-[13px] text-positive-700">
+        </motion.p>
+        <motion.p
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, delay: 0.12, ease: EASE }}
+          className="mt-3 font-mono text-[13px] text-positive-700"
+        >
           + <Money value={monthDelta} />{" "}
           <span className="text-ink-400">this month</span>
-        </p>
+        </motion.p>
       </motion.section>
 
       <div className="mb-8 grid grid-cols-2 gap-3">
@@ -135,7 +169,7 @@ export function DashboardContent({ data }: { data: DashboardData }) {
                 className={`mt-1.5 font-mono text-[14px] ${acc.type === "bnpl" ? "text-warning-700" : "text-ink-900"}`}
               >
                 {acc.type === "bnpl" ? "\u2212 " : ""}
-                <Money value={acc.balance} />
+                <Money value={acc.balance} currency={acc.currency} />
               </p>
               {acc.type === "bnpl" && (
                 <p className="mt-0.5 text-[10px] uppercase tracking-wide text-warning-700">
@@ -152,6 +186,7 @@ export function DashboardContent({ data }: { data: DashboardData }) {
                           100
                       ) / 100
                     }
+                    currency={acc.currency}
                   />{" "}
                   / day
                 </p>
@@ -160,6 +195,105 @@ export function DashboardContent({ data }: { data: DashboardData }) {
           ))}
         </div>
       </section>
+
+      {data.budgetStatus.length > 0 && (
+        <section className="mb-8">
+          <SectionHeader
+            title="Budget"
+            action={
+              <button
+                onClick={() => router.push("/budget")}
+                className="text-[13px] font-medium text-brand-700 transition-colors hover:text-brand-600"
+              >
+                View all
+              </button>
+            }
+          />
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {data.budgetStatus.slice(0, 4).map((b, i) => {
+              const pct = b.amount > 0 ? (b.spent / b.amount) * 100 : 0;
+              const isOver = b.spent > b.amount;
+              return (
+                <motion.button
+                  key={b.id}
+                  onClick={() => router.push("/budget")}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.32, delay: i * 0.04, ease: EASE }}
+                  className="pressable w-full rounded-card border border-hair border-line bg-paper-0 p-4 text-left transition-colors duration-150 hover:border-brand-500"
+                >
+                  <CircleDollarSignIcon
+                    size={22}
+                    strokeWidth={1.75}
+                    className={`mb-3 ${isOver ? "text-warning-600" : "text-brand-700"}`}
+                  />
+                  <p className="truncate text-[13px] font-medium text-ink-900">
+                    {b.categoryName || "All spending"}
+                  </p>
+                  <p className="mt-0.5 truncate text-[11px] text-ink-400">
+                    <Money value={b.spent} /> of <Money value={b.amount} />
+                  </p>
+                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-ink-100">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${Math.min(pct, 100)}%` }}
+                      transition={{ duration: 0.5, ease: EASE, delay: 0.1 + i * 0.04 }}
+                      className={`h-full rounded-full ${isOver ? "bg-warning-500" : "bg-brand-500"}`}
+                    />
+                  </div>
+                </motion.button>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {data.autopay.length > 0 && (
+        <section className="mb-8">
+          <SectionHeader
+            title="Autopay"
+            action={
+              <button
+                onClick={() => router.push("/autopay")}
+                className="text-[13px] font-medium text-brand-700 transition-colors hover:text-brand-600"
+              >
+                View all
+              </button>
+            }
+          />
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {data.autopay.map((r, i) => (
+              <motion.button
+                key={r.id}
+                onClick={() => router.push("/autopay")}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.32, delay: i * 0.04, ease: EASE }}
+                className="pressable w-full rounded-card border border-hair border-line bg-paper-0 p-4 text-left transition-colors duration-150 hover:border-brand-500"
+              >
+                <RepeatIcon
+                  size={22}
+                  strokeWidth={1.75}
+                  className="mb-3 text-brand-700"
+                />
+                <p className="truncate text-[13px] font-medium text-ink-900">
+                  {r.note || `${r.type.charAt(0).toUpperCase() + r.type.slice(1)}`}
+                </p>
+                <p className="mt-0.5 truncate text-[11px] text-ink-400">
+                  {r.accountName} &middot; {r.frequency}{r.interval > 1 ? ` (every ${r.interval})` : ""}
+                </p>
+                <p
+                  className={`mt-1.5 font-mono text-[14px] ${
+                    r.type === "income" ? "text-emerald-600" : r.type === "expense" ? "text-warning-600" : "text-ink-700"
+                  }`}
+                >
+                  <Money value={r.type === "expense" ? -r.amount : r.amount} />
+                </p>
+              </motion.button>
+            ))}
+          </div>
+        </section>
+      )}
 
       {data.netWorthHistory.length > 1 && (
         <motion.section

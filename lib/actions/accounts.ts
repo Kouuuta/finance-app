@@ -2,18 +2,15 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-
-async function getUserId(): Promise<string> {
-  const user = await prisma.user.findFirst();
-  if (!user) throw new Error("No user found in database");
-  return user.id;
-}
+import { getUserId } from "./auth";
 
 export async function createAccount(data: {
   name: string;
   type: string;
   institutionId?: string;
   balance: number;
+  currency?: string;
+  exchangeRateToBase?: number;
   interestRateAnnual?: number;
 }) {
   const userId = await getUserId();
@@ -46,13 +43,15 @@ export async function updateAccount(
     name?: string;
     type?: string;
     balance?: number;
+    currency?: string;
+    exchangeRateToBase?: number;
     interestRateAnnual?: number;
   }
 ) {
   const userId = await getUserId();
 
   await prisma.account.update({
-    where: { id, userId },
+    where: { id_userId: { id, userId } },
     data,
   });
 
@@ -63,7 +62,7 @@ export async function deleteAccount(id: string) {
   const userId = await getUserId();
 
   await prisma.account.delete({
-    where: { id, userId },
+    where: { id_userId: { id, userId } },
   });
 
   revalidatePath("/accounts");

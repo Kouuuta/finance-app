@@ -1,9 +1,10 @@
-import { prisma } from "@/lib/prisma";
+import { createClient } from "@/lib/supabase/server";
 import { getFormOptions, getTransactions } from "@/lib/queries";
 import { TransactionsContent } from "./TransactionsContent";
 
 export default async function Transactions() {
-  const user = await prisma.user.findFirst();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
   const { accounts, categories } = await getFormOptions(user.id);
@@ -14,6 +15,7 @@ export default async function Transactions() {
       initialTransactions={transactions}
       accounts={accounts}
       categories={categories}
+      totalCount={transactions.length}
     />
   );
 }

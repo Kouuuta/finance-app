@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
+import { offlineAction } from "@/lib/offline";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 
 interface GoalFormProps {
   open: boolean;
@@ -16,12 +18,14 @@ export function GoalForm({ open, onClose }: GoalFormProps) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const createGoal = offlineAction("createGoal");
+  const trapRef = useFocusTrap(open, onClose);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
     try {
-      const { createGoal } = await import("@/lib/actions/goals");
       await createGoal({
         name,
         targetAmount: parseFloat(targetAmount) || 0,
@@ -46,8 +50,10 @@ export function GoalForm({ open, onClose }: GoalFormProps) {
           onClick={onClose}
           role="dialog"
           aria-modal="true"
+          aria-labelledby="goal-dialog-title"
         >
           <motion.div
+            ref={trapRef}
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
@@ -58,9 +64,9 @@ export function GoalForm({ open, onClose }: GoalFormProps) {
             <div className="flex items-center gap-3 border-b border-hair border-line px-6 py-4">
               <div className="h-8 w-1 shrink-0 rounded-full bg-brand-600" />
               <div className="flex-1">
-                <h2 className="text-[16px] font-medium text-ink-900">New goal</h2>
+                <h2 id="goal-dialog-title" className="text-[16px] font-medium text-ink-900">New goal</h2>
               </div>
-              <button onClick={onClose} className="pressable flex h-9 w-9 items-center justify-center rounded-lg text-ink-400 transition-colors hover:bg-brand-50 hover:text-brand-700">
+              <button onClick={onClose} aria-label="Close" className="pressable flex h-9 w-9 items-center justify-center rounded-lg text-ink-400 transition-colors hover:bg-brand-50 hover:text-brand-700">
                 <X size={18} />
               </button>
             </div>

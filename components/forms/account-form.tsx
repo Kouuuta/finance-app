@@ -1,9 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, CheckIcon, PencilIcon } from "lucide-react";
 import { InstitutionIcon } from "@/components/ui/InstitutionIcon";
+import { Select } from "@/components/ui/Select";
+import { offlineAction } from "@/lib/offline";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 
 interface Institution {
   id: string;
@@ -18,6 +21,9 @@ interface ExistingAccount {
   name: string;
   type: string;
   balance: number;
+  currency?: string;
+  exchangeRateToBase?: number;
+  interestRateAnnual?: number | null;
   institutionId?: string | null;
   institution?: { id: string; name: string; logoUrl?: string | null } | null;
 }
@@ -27,6 +33,7 @@ interface AccountFormProps {
   onClose: () => void;
   institutions: Institution[];
   existingAccounts?: ExistingAccount[];
+  editAccount?: ExistingAccount | null;
 }
 
 const TYPE_OPTIONS = [
@@ -56,15 +63,41 @@ const TYPE_LABEL: Record<string, string> = {
   other: "Other",
 };
 
-export function AccountForm({ open, onClose, institutions, existingAccounts = [] }: AccountFormProps) {
-  const [name, setName] = useState("");
-  const [type, setType] = useState("bank");
-  const [institutionId, setInstitutionId] = useState("");
-  const [balance, setBalance] = useState("");
-  const [interestRateAnnual, setInterestRateAnnual] = useState("");
+export function AccountForm({ open, onClose, institutions, existingAccounts = [], editAccount }: AccountFormProps) {
+  const isEditing = !!editAccount;
+  const [name, setName] = useState(editAccount?.name ?? "");
+  const [type, setType] = useState(editAccount?.type ?? "bank");
+  const [institutionId, setInstitutionId] = useState(editAccount?.institutionId ?? "");
+  const [balance, setBalance] = useState(editAccount ? String(editAccount.balance) : "");
+  const [currency, setCurrency] = useState(editAccount?.currency ?? "PHP");
+  const [exchangeRateToBase, setExchangeRateToBase] = useState(
+    editAccount?.exchangeRateToBase ? String(editAccount.exchangeRateToBase) : "1"
+  );
+  const [interestRateAnnual, setInterestRateAnnual] = useState(
+    editAccount?.interestRateAnnual ? String(editAccount.interestRateAnnual) : ""
+  );
+  const trapRef = useFocusTrap(open, onClose);
   const [updating, setUpdating] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const createAccount = offlineAction("createAccount");
+  const updateAccount = offlineAction("updateAccount");
+
+  useEffect(() => {
+    setName(editAccount?.name ?? "");
+    setType(editAccount?.type ?? "bank");
+    setInstitutionId(editAccount?.institutionId ?? "");
+    setBalance(editAccount ? String(editAccount.balance) : "");
+    setCurrency(editAccount?.currency ?? "PHP");
+    setExchangeRateToBase(
+      editAccount?.exchangeRateToBase ? String(editAccount.exchangeRateToBase) : "1"
+    );
+    setInterestRateAnnual(
+      editAccount?.interestRateAnnual ? String(editAccount.interestRateAnnual) : ""
+    );
+    setError(null);
+  }, [editAccount]);
 
   const existing = existingAccounts.filter((a) => a.type === type);
 
@@ -83,25 +116,35 @@ export function AccountForm({ open, onClose, institutions, existingAccounts = []
     setSubmitting(true);
     setError(null);
     try {
-      const { createAccount } = await import("@/lib/actions/accounts");
-      await createAccount({
-        name,
-        type,
-        institutionId: institutionId || undefined,
-        balance: parseFloat(balance) || 0,
-        interestRateAnnual:
-          type === "savings" && interestRateAnnual
-            ? parseFloat(interestRateAnnual)
-            : undefined,
-      });
+      if (isEditing && editAccount) {
+        await updateAccount(editAccount.id, {
+          name,
+          type,
+          balance: parseFloat(balance) || 0,
+          currency,
+          exchangeRateToBase: parseFloat(exchangeRateToBase) || 1,
+          interestRateAnnual:
+            type === "savings" && interestRateAnnual
+              ? parseFloat(interestRateAnnual)
+              : undefined,
+        });
+      } else {
+        await createAccount({
+          name,
+          type,
+          institutionId: institutionId || undefined,
+          balance: parseFloat(balance) || 0,
+          currency,
+          exchangeRateToBase: parseFloat(exchangeRateToBase) || 1,
+          interestRateAnnual:
+            type === "savings" && interestRateAnnual
+              ? parseFloat(interestRateAnnual)
+              : undefined,
+        });
+      }
       onClose();
-      setName("");
-      setType("bank");
-      setInstitutionId("");
-      setBalance("");
-      setInterestRateAnnual("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create account");
+      setError(err instanceof Error ? err.message : "Failed to save account");
     } finally {
       setSubmitting(false);
     }
@@ -111,7 +154,6 @@ export function AccountForm({ open, onClose, institutions, existingAccounts = []
     setUpdating(id);
     setError(null);
     try {
-      const { updateAccount } = await import("@/lib/actions/accounts");
       await updateAccount(id, { balance: newBalance });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update balance");
@@ -131,8 +173,10 @@ export function AccountForm({ open, onClose, institutions, existingAccounts = []
           onClick={onClose}
           role="dialog"
           aria-modal="true"
+          aria-labelledby="acct-dialog-title"
         >
           <motion.div
+            ref={trapRef}
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
@@ -144,12 +188,13 @@ export function AccountForm({ open, onClose, institutions, existingAccounts = []
               <div className="flex items-center gap-3 px-6 pt-4">
                 <div className="h-8 w-1 shrink-0 rounded-full bg-brand-600" />
                 <div className="flex-1">
-                  <h2 className="text-[16px] font-medium text-ink-900">
-                    Manage accounts
+                  <h2 id="acct-dialog-title" className="text-[16px] font-medium text-ink-900">
+                    {isEditing ? "Edit account" : "Manage accounts"}
                   </h2>
                 </div>
                 <button
                   onClick={onClose}
+                  aria-label="Close"
                   className="pressable flex h-9 w-9 items-center justify-center rounded-lg text-ink-400 transition-colors hover:bg-brand-50 hover:text-brand-700"
                 >
                   <X size={18} />
@@ -269,6 +314,48 @@ export function AccountForm({ open, onClose, institutions, existingAccounts = []
                         />
                       </div>
 
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="mb-1 block text-[13px] font-medium text-ink-700">
+                            Currency
+                          </label>
+                          <Select
+                            value={currency}
+                            onChange={setCurrency}
+                            options={[
+                              { value: "PHP", label: "PHP (\u20B1)" },
+                              { value: "USD", label: "USD ($)" },
+                              { value: "EUR", label: "EUR (\u20AC)" },
+                              { value: "GBP", label: "GBP (\u00A3)" },
+                              { value: "JPY", label: "JPY (\u00A5)" },
+                              { value: "SGD", label: "SGD (S$)" },
+                              { value: "HKD", label: "HKD (HK$)" },
+                              { value: "KRW", label: "KRW (\u20A9)" },
+                              { value: "CNY", label: "CNY (CN\u00A5)" },
+                              { value: "INR", label: "INR (\u20B9)" },
+                              { value: "IDR", label: "IDR (Rp)" },
+                              { value: "MYR", label: "MYR (RM)" },
+                              { value: "THB", label: "THB (\u0E3F)" },
+                              { value: "VND", label: "VND (\u20AB)" },
+                            ]}
+                          />
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-[13px] font-medium text-ink-700">
+                            Rate → {currency === "PHP" ? "PHP" : "PHP"}
+                          </label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={exchangeRateToBase}
+                            onChange={(e) => setExchangeRateToBase(e.target.value)}
+                            className="w-full rounded-lg border border-hair border-line bg-paper-0 px-3.5 py-2.5 text-[15px] text-ink-900 placeholder:text-ink-400 focus:border-brand-600 focus:outline-none"
+                            placeholder="1.00"
+                            disabled={currency === "PHP"}
+                          />
+                        </div>
+                      </div>
+
                       {type === "savings" && (
                         <div>
                           <label className="mb-1 block text-[13px] font-medium text-ink-700">
@@ -319,7 +406,7 @@ export function AccountForm({ open, onClose, institutions, existingAccounts = []
                             />
                           </svg>
                         )}
-                        {submitting ? "Adding…" : "Add account"}
+                        {submitting ? "Saving…" : isEditing ? "Update account" : "Add account"}
                       </button>
                     </>
                   )}

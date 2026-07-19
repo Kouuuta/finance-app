@@ -1,9 +1,10 @@
-import { prisma } from "@/lib/prisma";
+import { createClient } from "@/lib/supabase/server";
 import { getFormOptions } from "@/lib/queries";
 import { AccountsContent } from "./AccountsContent";
 
 export default async function Accounts() {
-  const user = await prisma.user.findFirst();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
   const { accounts, institutions } = await getFormOptions(user.id);

@@ -4,7 +4,9 @@ import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { Trash2 } from "lucide-react";
 import { PageHeading } from "@/components/layout/PageHeading";
+import { offlineAction } from "@/lib/offline";
 import { AddButton } from "@/components/ui/AddButton";
+import { Select } from "@/components/ui/Select";
 import { Card } from "@/components/ui/Card";
 import { Money } from "@/components/ui/Money";
 import { GoalForm } from "@/components/forms/goal-form";
@@ -46,9 +48,11 @@ export function GoalsContent({ goals, accounts }: GoalsContentProps) {
     }));
   }
 
+  const deleteGoal = offlineAction("deleteGoal");
+  const contributeToGoal = offlineAction("contributeToGoal");
+
   async function handleDelete(id: string) {
     setDeleting(id);
-    const { deleteGoal } = await import("@/lib/actions/goals");
     await deleteGoal(id);
     setDeleting(null);
   }
@@ -57,7 +61,6 @@ export function GoalsContent({ goals, accounts }: GoalsContentProps) {
     const st = getState(goalId);
     if (!st.account || !st.amount) return;
     setContributing(goalId);
-    const { contributeToGoal } = await import("@/lib/actions/goals");
     await contributeToGoal(goalId, parseFloat(st.amount) || 0, st.account);
     setContributing(null);
     setShowContribute(null);
@@ -201,18 +204,16 @@ export function GoalsContent({ goals, accounts }: GoalsContentProps) {
                       <label className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-ink-400">
                         From
                       </label>
-                      <select
+                      <Select
                         value={getState(goal.id).account}
-                        onChange={(e) => setField(goal.id, "account", e.target.value)}
-                        className="w-full rounded-md border border-hair border-line px-2 py-1.5 text-[12px] text-ink-900 focus:border-brand-600 focus:outline-none"
-                      >
-                        <option value="">Select account</option>
-                        {accounts.map((a) => (
-                          <option key={a.id} value={a.id}>
-                            {a.name}
-                          </option>
-                        ))}
-                      </select>
+                        onChange={(v) => setField(goal.id, "account", v)}
+                        placeholder="Select account"
+                        options={accounts.map((a) => ({
+                          value: a.id,
+                          label: a.name,
+                        }))}
+                        buttonClassName="rounded-md px-2 py-1.5 text-[12px]"
+                      />
                     </div>
                     <button
                       onClick={() => handleContribute(goal.id)}

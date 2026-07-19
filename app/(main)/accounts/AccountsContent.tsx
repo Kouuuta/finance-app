@@ -8,7 +8,8 @@ import { Money } from "@/components/ui/Money";
 import { InstitutionIcon } from "@/components/ui/InstitutionIcon";
 import { AddButton } from "@/components/ui/AddButton";
 import { AccountForm } from "@/components/forms/account-form";
-import { Trash2 } from "lucide-react";
+import { Trash2, PencilIcon } from "lucide-react";
+import { offlineAction } from "@/lib/offline";
 import { useState } from "react";
 
 const EASE = [0.23, 1, 0.32, 1] as const;
@@ -18,6 +19,8 @@ interface Account {
   name: string;
   type: string;
   balance: number;
+  currency?: string;
+  exchangeRateToBase?: number;
   interestRateAnnual?: number | null;
   institutionId?: string | null;
   institution?: { id: string; name: string; logoUrl?: string | null } | null;
@@ -48,18 +51,23 @@ const TYPE_LABEL: Record<string, string> = {
 export function AccountsContent({ accounts, institutions }: AccountsContentProps) {
   const router = useRouter();
   const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState<Account | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
 
   const spending = accounts.filter((a) => a.type !== "bnpl");
   const owed = accounts.filter((a) => a.type === "bnpl");
   const netWorth = accounts.reduce(
-    (s, a) => s + (a.type === "bnpl" ? -a.balance : a.balance),
+    (s, a) => {
+      const baseBalance = a.balance * (a.exchangeRateToBase ?? 1);
+      return s + (a.type === "bnpl" ? -baseBalance : baseBalance);
+    },
     0
   );
 
+  const deleteAccount = offlineAction("deleteAccount");
+
   async function handleDelete(id: string) {
     setDeleting(id);
-    const { deleteAccount } = await import("@/lib/actions/accounts");
     await deleteAccount(id);
     setDeleting(null);
   }
@@ -99,18 +107,31 @@ export function AccountsContent({ accounts, institutions }: AccountsContentProps
             : "border-line bg-paper-0"
         }`}
       >
-        <button
-          onClick={() => handleDelete(account.id)}
-          disabled={deleting === account.id}
-          className={`absolute right-1 top-1 flex h-9 w-9 items-center justify-center rounded-lg transition-colors ${
-            isOwed
-              ? "text-warning-700 hover:bg-warning-100"
-              : "text-ink-400 hover:bg-brand-50 hover:text-brand-700"
-          }`}
-          aria-label={`Delete ${account.name}`}
-        >
-          <Trash2 size={15} strokeWidth={1.5} />
-        </button>
+        <div className="absolute right-1 top-1 flex gap-0.5">
+          <button
+            onClick={(e) => { e.stopPropagation(); setEditing(account); }}
+            className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors ${
+              isOwed
+                ? "text-warning-700 hover:bg-warning-100"
+                : "text-ink-400 hover:bg-brand-50 hover:text-brand-700"
+            }`}
+            aria-label={`Edit ${account.name}`}
+          >
+            <PencilIcon size={14} strokeWidth={1.5} />
+          </button>
+          <button
+            onClick={() => handleDelete(account.id)}
+            disabled={deleting === account.id}
+            className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors ${
+              isOwed
+                ? "text-warning-700 hover:bg-warning-100"
+                : "text-ink-400 hover:bg-brand-50 hover:text-brand-700"
+            }`}
+            aria-label={`Delete ${account.name}`}
+          >
+            <Trash2 size={15} strokeWidth={1.5} />
+          </button>
+        </div>
 
         <LogoBlock account={account} />
 
@@ -124,7 +145,7 @@ export function AccountsContent({ accounts, institutions }: AccountsContentProps
           className={`mt-2 font-mono text-[16px] ${isOwed ? "text-warning-700" : "text-ink-900"}`}
         >
           {isOwed ? "\u2212 " : ""}
-          <Money value={account.balance} />
+          <Money value={account.balance} currency={account.currency ?? "PHP"} />
         </p>
         {isOwed && (
           <p className="mt-0.5 text-[10px] uppercase tracking-wide text-warning-700">
@@ -141,6 +162,7 @@ export function AccountsContent({ accounts, institutions }: AccountsContentProps
                     100
                 ) / 100
               }
+              currency={account.currency ?? "PHP"}
             />{" "}
             / day
           </p>
@@ -158,10 +180,11 @@ export function AccountsContent({ accounts, institutions }: AccountsContentProps
       />
 
       <AccountForm
-        open={showForm}
-        onClose={() => setShowForm(false)}
+        open={showForm || !!editing}
+        onClose={() => { setShowForm(false); setEditing(null); }}
         institutions={institutions}
         existingAccounts={accounts}
+        editAccount={editing}
       />
 
       <motion.div
@@ -203,6 +226,22 @@ export function AccountsContent({ accounts, institutions }: AccountsContentProps
             ))}
           </div>
         </section>
+      )}
+
+      {accounts.length === 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: EASE }}
+          className="rounded-card border border-hair border-line bg-paper-0 px-6 py-14 text-center"
+        >
+          <p className="text-[15px] font-medium text-ink-900">
+            No accounts yet
+          </p>
+          <p className="mt-1 text-[13px] text-ink-400">
+            Add your first account to start tracking your finances.
+          </p>
+        </motion.div>
       )}
     </div>
   );

@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
+import { Select } from "@/components/ui/Select";
+import { offlineAction } from "@/lib/offline";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 
 interface InvestmentFormProps {
   open: boolean;
@@ -19,12 +22,14 @@ export function InvestmentForm({ open, onClose }: InvestmentFormProps) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const createInvestment = offlineAction("createInvestment");
+  const trapRef = useFocusTrap(open, onClose);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
     try {
-      const { createInvestment } = await import("@/lib/actions/investments");
       await createInvestment({
         name,
         type,
@@ -52,8 +57,10 @@ export function InvestmentForm({ open, onClose }: InvestmentFormProps) {
           onClick={onClose}
           role="dialog"
           aria-modal="true"
+          aria-labelledby="inv-dialog-title"
         >
           <motion.div
+            ref={trapRef}
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
@@ -64,9 +71,9 @@ export function InvestmentForm({ open, onClose }: InvestmentFormProps) {
             <div className="flex items-center gap-3 border-b border-hair border-line px-6 py-4">
               <div className="h-8 w-1 shrink-0 rounded-full bg-brand-600" />
               <div className="flex-1">
-                <h2 className="text-[16px] font-medium text-ink-900">Add holding</h2>
+                <h2 id="inv-dialog-title" className="text-[16px] font-medium text-ink-900">New investment</h2>
               </div>
-              <button onClick={onClose} className="pressable flex h-9 w-9 items-center justify-center rounded-lg text-ink-400 transition-colors hover:bg-brand-50 hover:text-brand-700">
+              <button onClick={onClose} aria-label="Close" className="pressable flex h-9 w-9 items-center justify-center rounded-lg text-ink-400 transition-colors hover:bg-brand-50 hover:text-brand-700">
                 <X size={18} />
               </button>
             </div>
@@ -91,16 +98,16 @@ export function InvestmentForm({ open, onClose }: InvestmentFormProps) {
                 <label className="mb-1 block text-[13px] font-medium text-ink-700">
                   Type
                 </label>
-                <select
+                <Select
                   value={type}
-                  onChange={(e) => setType(e.target.value)}
-                  className="w-full rounded-lg border border-hair border-line bg-paper-0 px-3.5 py-2.5 text-[15px] text-ink-900 focus:border-brand-600 focus:outline-none"
-                >
-                  <option value="stock">Stock</option>
-                  <option value="crypto">Crypto</option>
-                  <option value="mutual_fund">Mutual fund</option>
-                  <option value="mp2">Pag-IBIG MP2</option>
-                </select>
+                  onChange={setType}
+                  options={[
+                    { value: "stock", label: "Stock" },
+                    { value: "crypto", label: "Crypto" },
+                    { value: "mutual_fund", label: "Mutual fund" },
+                    { value: "mp2", label: "Pag-IBIG MP2" },
+                  ]}
+                />
               </div>
 
               <div>

@@ -8,6 +8,7 @@ interface MoneyProps {
   value: number;
   signed?: boolean;
   tone?: MoneyTone;
+  currency?: string;
   className?: string;
 }
 
@@ -22,9 +23,10 @@ export function Money({
   value,
   signed = false,
   tone = "neutral",
+  currency = "PHP",
   className = "",
 }: MoneyProps) {
-  const text = signed ? formatSigned(value) : formatMoney(value);
+  const text = signed ? formatSigned(value, currency) : formatMoney(value, currency);
   return (
     <span
       className={`font-mono tabular-nums ${TONE_CLASS[tone]} ${className}`}

@@ -2,12 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-
-async function getUserId(): Promise<string> {
-  const user = await prisma.user.findFirst();
-  if (!user) throw new Error("No user found in database");
-  return user.id;
-}
+import { getUserId } from "./auth";
 
 export async function createGoal(data: {
   name: string;
@@ -32,12 +27,12 @@ export async function contributeToGoal(
   const userId = await getUserId();
 
   const goal = await prisma.savingsGoal.findUnique({
-    where: { id: goalId, userId },
+    where: { id_userId: { id: goalId, userId } },
   });
   if (!goal) throw new Error("Goal not found");
 
   await prisma.account.update({
-    where: { id: accountId, userId },
+    where: { id_userId: { id: accountId, userId } },
     data: { balance: { increment: -amount } },
   });
 
@@ -65,7 +60,7 @@ export async function deleteGoal(id: string) {
   const userId = await getUserId();
 
   await prisma.savingsGoal.delete({
-    where: { id, userId },
+    where: { id_userId: { id, userId } },
   });
 
   revalidatePath("/goals");
