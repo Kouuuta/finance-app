@@ -94,6 +94,7 @@ export function GoalForm({ open, onClose }: GoalFormProps) {
                 <input
                   type="number"
                   step="0.01"
+                  min="0.01"
                   value={targetAmount}
                   onChange={(e) => setTargetAmount(e.target.value)}
                   required

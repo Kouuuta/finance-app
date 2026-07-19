@@ -37,9 +37,6 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full">
-        <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[999] focus:rounded-lg focus:bg-paper-0 focus:px-4 focus:py-2 focus:text-[14px] focus:font-medium focus:text-ink-900 focus:shadow-lg focus:outline-2 focus:outline-offset-2 focus:outline-ink-900">
-          Skip to content
-        </a>
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>

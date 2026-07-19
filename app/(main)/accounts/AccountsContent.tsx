@@ -11,6 +11,7 @@ import { AccountForm } from "@/components/forms/account-form";
 import { Trash2, PencilIcon } from "lucide-react";
 import { offlineAction } from "@/lib/offline";
 import { useState } from "react";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 const EASE = [0.23, 1, 0.32, 1] as const;
 
@@ -53,6 +54,7 @@ export function AccountsContent({ accounts, institutions }: AccountsContentProps
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Account | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   const spending = accounts.filter((a) => a.type !== "bnpl");
   const owed = accounts.filter((a) => a.type === "bnpl");
@@ -66,9 +68,15 @@ export function AccountsContent({ accounts, institutions }: AccountsContentProps
 
   const deleteAccount = offlineAction("deleteAccount");
 
-  async function handleDelete(id: string) {
-    setDeleting(id);
-    await deleteAccount(id);
+  function handleDelete(id: string) {
+    setConfirmDelete(id);
+  }
+
+  async function handleConfirmDelete() {
+    if (!confirmDelete) return;
+    setDeleting(confirmDelete);
+    setConfirmDelete(null);
+    await deleteAccount(confirmDelete);
     setDeleting(null);
   }
 
@@ -101,7 +109,7 @@ export function AccountsContent({ accounts, institutions }: AccountsContentProps
         animate={{ opacity: 1, y: 0 }}
         whileTap={{ scale: 0.97 }}
         transition={{ duration: 0.32, delay: index * 0.03, ease: EASE }}
-        className={`relative rounded-card border border-hair p-5 transition-colors duration-150 ${
+        className={`group relative rounded-card border border-hair p-5 transition-colors duration-150 ${
           isOwed
             ? "border-warning-600/20 bg-warning-50"
             : "border-line bg-paper-0"
@@ -122,7 +130,7 @@ export function AccountsContent({ accounts, institutions }: AccountsContentProps
           <button
             onClick={() => handleDelete(account.id)}
             disabled={deleting === account.id}
-            className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors ${
+            className={`flex h-9 w-9 items-center justify-center rounded-lg transition-all md:opacity-0 md:group-hover:opacity-100 ${
               isOwed
                 ? "text-warning-700 hover:bg-warning-100"
                 : "text-ink-400 hover:bg-brand-50 hover:text-brand-700"
@@ -218,7 +226,7 @@ export function AccountsContent({ accounts, institutions }: AccountsContentProps
       {owed.length > 0 && (
         <section>
           <h2 className="mb-3 text-[13px] font-semibold uppercase tracking-wide text-brand-700">
-            Owed (nets against total)
+            You owe
           </h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {owed.map((account, i) => (
@@ -227,6 +235,15 @@ export function AccountsContent({ accounts, institutions }: AccountsContentProps
           </div>
         </section>
       )}
+
+      <ConfirmDialog
+        open={!!confirmDelete}
+        onClose={() => setConfirmDelete(null)}
+        onConfirm={handleConfirmDelete}
+        title="Delete account?"
+        message="This will permanently delete this account and all its transactions. This action cannot be undone."
+        isLoading={!!deleting}
+      />
 
       {accounts.length === 0 && (
         <motion.div

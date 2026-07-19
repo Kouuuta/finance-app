@@ -5,6 +5,7 @@ import { format } from "date-fns";
 import { Trash2 } from "lucide-react";
 import { PageHeading } from "@/components/layout/PageHeading";
 import { offlineAction } from "@/lib/offline";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { AddButton } from "@/components/ui/AddButton";
 import { Select } from "@/components/ui/Select";
 import { Card } from "@/components/ui/Card";
@@ -30,6 +31,7 @@ interface GoalsContentProps {
 export function GoalsContent({ goals, accounts }: GoalsContentProps) {
   const [showForm, setShowForm] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [showContribute, setShowContribute] = useState<string | null>(null);
   const [contribState, setContribState] = useState<Record<string, { amount: string; account: string }>>({});
   const [contributing, setContributing] = useState<string | null>(null);
@@ -51,9 +53,15 @@ export function GoalsContent({ goals, accounts }: GoalsContentProps) {
   const deleteGoal = offlineAction("deleteGoal");
   const contributeToGoal = offlineAction("contributeToGoal");
 
-  async function handleDelete(id: string) {
-    setDeleting(id);
-    await deleteGoal(id);
+  function handleDelete(id: string) {
+    setConfirmDelete(id);
+  }
+
+  async function handleConfirmDelete() {
+    if (!confirmDelete) return;
+    setDeleting(confirmDelete);
+    setConfirmDelete(null);
+    await deleteGoal(confirmDelete);
     setDeleting(null);
   }
 
@@ -107,7 +115,7 @@ export function GoalsContent({ goals, accounts }: GoalsContentProps) {
         {goals.map((goal, i) => {
           const pct = Math.min(
             100,
-            Math.round((goal.currentAmount / goal.targetAmount) * 100)
+            goal.targetAmount > 0 ? Math.round((goal.currentAmount / goal.targetAmount) * 100) : 0
           );
           const remaining = goal.targetAmount - goal.currentAmount;
           return (
@@ -259,6 +267,15 @@ export function GoalsContent({ goals, accounts }: GoalsContentProps) {
         })}
       </div>
       )}
+
+      <ConfirmDialog
+        open={!!confirmDelete}
+        onClose={() => setConfirmDelete(null)}
+        onConfirm={handleConfirmDelete}
+        title="Delete goal?"
+        message="This will permanently delete this savings goal. The money you've contributed will remain in your accounts."
+        isLoading={!!deleting}
+      />
     </div>
   );
 }

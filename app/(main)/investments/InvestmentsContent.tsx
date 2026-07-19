@@ -11,6 +11,7 @@ import { LedgerRow } from "@/components/ui/LedgerRow";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { InvestmentForm } from "@/components/forms/investment-form";
 import { useState } from "react";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 const EASE = [0.23, 1, 0.32, 1] as const;
 
@@ -40,6 +41,7 @@ export function InvestmentsContent({ investments }: InvestmentsContentProps) {
   const [editingPrice, setEditingPrice] = useState<string | null>(null);
   const [priceInput, setPriceInput] = useState("");
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [updating, setUpdating] = useState<string | null>(null);
 
   const value = investments.reduce((s, i) => s + i.units * i.currentPrice, 0);
@@ -58,9 +60,15 @@ export function InvestmentsContent({ investments }: InvestmentsContentProps) {
   const deleteInvestment = offlineAction("deleteInvestment");
   const updateInvestmentPrice = offlineAction("updateInvestmentPrice");
 
-  async function handleDelete(id: string) {
-    setDeleting(id);
-    await deleteInvestment(id);
+  function handleDelete(id: string) {
+    setConfirmDelete(id);
+  }
+
+  async function handleConfirmDelete() {
+    if (!confirmDelete) return;
+    setDeleting(confirmDelete);
+    setConfirmDelete(null);
+    await deleteInvestment(confirmDelete);
     setDeleting(null);
   }
 
@@ -98,7 +106,7 @@ export function InvestmentsContent({ investments }: InvestmentsContentProps) {
           <Money value={value} />
         </p>
         <p className="mt-3 font-mono text-[13px] text-positive-700">
-          + <Money value={gain} />{" "}
+          <Money value={gain} signed />{" "}
           <span className="text-ink-400">
             ({gainPct >= 0 ? "+" : "\u2212"}
             {Math.abs(gainPct).toFixed(1)}%) all time
@@ -209,6 +217,15 @@ export function InvestmentsContent({ investments }: InvestmentsContentProps) {
         })}
       </Card>
       )}
+
+      <ConfirmDialog
+        open={!!confirmDelete}
+        onClose={() => setConfirmDelete(null)}
+        onConfirm={handleConfirmDelete}
+        title="Delete holding?"
+        message="This will permanently remove this investment from your portfolio. Price history will not be recoverable."
+        isLoading={!!deleting}
+      />
 
       <p className="mt-4 px-1 text-[12px] text-ink-400">
         Prices are updated manually. Cost basis <Money value={cost} />.

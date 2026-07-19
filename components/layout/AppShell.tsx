@@ -50,7 +50,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <OfflineBanner />
       <DesktopRail />
       <div className="flex min-w-0 flex-1 flex-col">
-        <main id="main-content" className="mx-auto w-full max-w-2xl flex-1 px-5 pb-28 pt-24 sm:px-6 md:pb-12 md:pt-10">
+        <main className="mx-auto w-full max-w-2xl flex-1 px-5 pb-28 pt-24 sm:px-6 md:pb-12 md:pt-10">
           {children}
         </main>
       </div>

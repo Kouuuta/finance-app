@@ -129,6 +129,15 @@ button[disabled] {
   }
 }
 
+@keyframes loading-cursor-blink {
+  0%, 50% { opacity: 1; }
+  50.01%, 100% { opacity: 0; }
+}
+
+.loading-cursor {
+  animation: loading-cursor-blink 0.9s steps(1) infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

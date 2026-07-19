@@ -105,7 +105,7 @@ export function DashboardContent({ data }: { data: DashboardData }) {
           transition={{ duration: 0.35, delay: 0.12, ease: EASE }}
           className="mt-3 font-mono text-[13px] text-positive-700"
         >
-          + <Money value={monthDelta} />{" "}
+          <Money value={monthDelta} signed />{" "}
           <span className="text-ink-400">this month</span>
         </motion.p>
       </motion.section>
