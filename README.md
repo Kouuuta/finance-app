@@ -1,4 +1,4 @@
-# Vault
+# Vault (Unfinished Project)
 
 Personal finance tracker. Track accounts, transactions, investments, budgets, and recurring payments — online and off.
 
